@@ -1,72 +1,103 @@
--- Khởi tạo các biến góc và tốc độ ban đầu
-local goc = 0
-local toc_do_xoay = 50 -- Đơn vị: độ/giây
-local ban_kinh = 10    -- Bán kính vòng tròn
+-- main.lua
+-- Menu xoay vòng tròn có thể chỉnh tốc độ
 
--- Hàm hiển thị menu đơn giản ra màn hình console
-local function hien_thi_menu()
-    print("\n--- MENU CHỈNH TỐC ĐỘ ---")
-    print("Tốc độ hiện tại: " .. toc_do_xoay .. " độ/giây")
-    print("1. Tăng tốc độ (+10)")
-    print("2. Giảm tốc độ (-10)")
-    print("3. Dừng xoay (Đặt về 0)")
-    print("Nhập số từ 1-3 để chọn, hoặc nhập bất kỳ số nào khác để đặt tốc độ tùy ý:")
+local angle = 0
+local speed = 2
+local menuOpen = true
+
+local buttons = {
+    {text = "Tăng tốc [+]", x = 40, y = 120, w = 200, h = 40},
+    {text = "Giảm tốc [-]", x = 40, y = 170, w = 200, h = 40},
+    {text = "Đóng/Mở Menu [M]", x = 40, y = 220, w = 200, h = 40}
+}
+
+function love.update(dt)
+    angle = angle + speed * dt
 end
 
--- Hàm xử lý khi người dùng chọn menu
-local function xu_ly_menu(lua_chon)
-    local so = tonumber(lua_chon)
-    if so == 1 then
-        toc_do_xoay = toc_do_xoay + 10
-    elseif so == 2 then
-        toc_do_xoay = toc_do_xoay - 10
-    elseif so == 3 then
-        toc_do_xoay = 0
-    elseif so then
-        toc_do_xoay = so -- Nếu nhập số khác thì lấy số đó làm tốc độ luôn
-    else
-        print("Lựa chọn không hợp lệ!")
+function love.draw()
+
+    ------------------------
+    -- Vòng xoay
+    ------------------------
+    local cx, cy = 500, 300
+    local radius = 100
+
+    love.graphics.setColor(1,1,1)
+    love.graphics.circle("line", cx, cy, radius)
+
+    local x = cx + math.cos(angle) * radius
+    local y = cy + math.sin(angle) * radius
+
+    love.graphics.setColor(1,0,0)
+    love.graphics.circle("fill", x, y, 15)
+
+    ------------------------
+    -- MENU
+    ------------------------
+    if menuOpen then
+
+        -- Background menu
+        love.graphics.setColor(0.1,0.1,0.1,0.85)
+        love.graphics.rectangle("fill", 20, 50, 250, 250, 15, 15)
+
+        -- Tiêu đề
+        love.graphics.setColor(0,1,1)
+        love.graphics.print("MENU XOAY", 90, 70, 0, 2, 2)
+
+        -- Hiển thị tốc độ
+        love.graphics.setColor(1,1,1)
+        love.graphics.print("Tốc độ: "..string.format("%.1f", speed), 70, 95)
+
+        -- Buttons
+        for i,btn in ipairs(buttons) do
+            love.graphics.setColor(0.2,0.2,0.2)
+            love.graphics.rectangle("fill", btn.x, btn.y, btn.w, btn.h, 10,10)
+
+            love.graphics.setColor(1,1,1)
+            love.graphics.printf(
+                btn.text,
+                btn.x,
+                btn.y + 12,
+                btn.w,
+                "center"
+            )
+        end
     end
 end
 
--- Hàm cập nhật vị trí xoay (Chạy liên tục trong vòng lặp game)
--- dt (Delta Time) là khoảng thời gian giữa 2 khung hình (ví dụ: 1/60 giây)
-local function cap_nhat_toa_do(dt)
-    -- Tính góc mới dựa trên tốc độ và thời gian trôi qua
-    goc = goc + toc_do_xoay * dt
-    
-    -- Giới hạn góc trong khoảng 0-360 độ cho gọn
-    if goc >= 360 then goc = goc - 360 end
-    if goc < 0 then goc = goc + 360 end
+function love.keypressed(key)
 
-    -- Đổi từ độ sang Radian để dùng cho hàm toán học math.sin/cos
-    local radian = math.rad(goc)
-    
-    -- Công thức lượng giác để tìm tọa độ X, Y trên vòng tròn
-    local x = ban_kinh * math.cos(radian)
-    local y = ban_kinh * math.sin(radian)
-    
-    -- In ra tọa độ hiện tại để kiểm tra
-    print(string.format("Góc: %3d° | Tọa độ X: %6.2f | Y: %6.2f", goc, x, y))
+    if key == "kp+" or key == "=" then
+        speed = speed + 0.5
+    end
+
+    if key == "kp-" or key == "-" then
+        speed = speed - 0.5
+    end
+
+    if key == "m" then
+        menuOpen = not menuOpen
+    end
 end
 
--- =======================================================
--- MÔ PHỎNG CHƯƠNG TRÌNH CHẠY (Thực tế sẽ chạy theo khung hình của Engine)
--- =======================================================
+function love.mousepressed(x, y, button)
 
-print("Bắt đầu xoay vật thể...")
-hien_thi_menu()
+    if button == 1 and menuOpen then
 
--- Mô phỏng chạy 3 bước với tốc độ mặc định (dt = 0.1 giây mỗi bước)
-print("\n--- Vật thể đang xoay ---")
-cap_nhat_toa_do(0.1)
-cap_nhat_toa_do(0.1)
+        -- Tăng tốc
+        if x > 40 and x < 240 and y > 120 and y < 160 then
+            speed = speed + 0.5
+        end
 
--- Mô phỏng người dùng chọn Menu: Nhập "1" để tăng tốc độ
-print("\n[Hệ thống]: Người dùng chọn '1' trên menu để tăng tốc.")
-xu_ly_menu("1") 
+        -- Giảm tốc
+        if x > 40 and x < 240 and y > 170 and y < 210 then
+            speed = speed - 0.5
+        end
 
-hien_thi_menu()
-print("\n--- Vật thể tiếp tục xoay với tốc độ mới ---")
-cap_nhat_toa_do(0.1)
-cap_nhat_toa_do(0.1)
+        -- Ẩn/Hiện menu
+        if x > 40 and x < 240 and y > 220 and y < 260 then
+            menuOpen = false
+        end
+    end
+end
